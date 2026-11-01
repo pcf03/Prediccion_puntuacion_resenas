@@ -6,6 +6,7 @@ env/
 # Datos en bruto y matrices exportadas (archivos pesados)
 datasets/*.csv
 resultados/*.npz
+.docx
 
 # Archivos temporales de Python y Jupyter (opcional pero recomendado)
 __pycache__/
