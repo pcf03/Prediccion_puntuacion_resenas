@@ -10,7 +10,7 @@ from nltk.corpus import stopwords
 
 # 1) CONFIG INICIAL Y DESCARGA DE PALABRAS VACÍAS (stopwords)
 nltk.download("stopwords", quiet=True)
-SEED = 0 
+SEED = 0
 
 # Carga de datos
 df = pd.read_csv("datasets/Hotel_Reviews.csv")
@@ -40,6 +40,9 @@ df["rating"] = np.ceil(df["Reviewer_Score"] / 2)
 # Eliminamos filas que no tengan nada de texto, no nos sirven para nada
 df = df.dropna(subset=["texto", "rating"])
 
+# Filtro: Una vez limpio el texto real, cogemos 10.000 reseñas al azar
+df = df.sample(n=10000, random_state=SEED)
+
 # Cojo las variables X la entrada de texto e Y las estrellas que queremos predecir
 X_texto = df["texto"]
 y_estrellas = df["rating"]
@@ -51,20 +54,28 @@ X_train_texto, X_test_texto, y_train, y_test = train_test_split(
     X_texto, y_estrellas, test_size=0.25, random_state=SEED, stratify=y_estrellas
 )
 
-# Vectorización TF-IDF ignora las stopwords y se queda con las 5000 palrabas mas importantes para que no sature la RAM
+# Vectorización TF-IDF ignora las stopwords y se queda con las 1000 palabra mas importantes para que no sature la RAM
 vectorizador = TfidfVectorizer(
     stop_words=stopwords.words("english"),
-    max_features=5000 
+    max_features=1000 
 )
 
 # Traducimos los textos a matrices
-X_train_tfidf = vectorizador.fit_transform(X_train_texto).toarray()
-X_test_tfidf = vectorizador.transform(X_test_texto).toarray()
+
+X_train_tfidf = vectorizador.fit_transform(X_train_texto)
+X_test_tfidf = vectorizador.transform(X_test_texto)
 
 
 # 4) REDUCCIÓN DE DIMENSIONALIDAD CON UMAP
 # Reducimos las columnas a solo 10 principales
-reductor_umap = umap.UMAP(n_components=10, n_neighbors=15, min_dist=0.0, random_state=SEED)
+# init="random" solucion para evitar colapso de memoria
+reductor_umap = umap.UMAP(
+    n_components=10, 
+    n_neighbors=15, 
+    min_dist=0.0, 
+    random_state=SEED,
+    init="random"
+) 
 
 # El reductor aprende solo de X_train_tfidf
 X_train_umap = reductor_umap.fit_transform(X_train_tfidf)
