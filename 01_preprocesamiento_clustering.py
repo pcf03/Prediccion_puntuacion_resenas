@@ -204,7 +204,9 @@ for particion, (indices_train, indices_val) in enumerate(
         entrada = configuracion["entrada"]
         modelo = clone(configuracion["modelo"])
         modelo.fit(entradas_train[entrada], notas_train)
-        predicciones = modelo.predict(entradas_val[entrada])
+
+        # Las predicciones del regresor han de estar en el intervalo [1,10]
+        predicciones = np.clip(modelo.predict(entradas_val[entrada]), 1, 10)
 
         mse = mean_squared_error(notas_val, predicciones)
         resultados_cv.append({
@@ -320,7 +322,11 @@ else:
 
 modelo_final = clone(configuracion_mejor["modelo"])
 modelo_final.fit(X_train_final, y_train)
-predicciones_test = modelo_final.predict(X_test_final)
+
+# Predicciones entre 1 y 10, como antes
+predicciones_test = np.clip(
+    modelo_final.predict(X_test_final), 1, 10
+)
 
 modelo_dummy = DummyRegressor(strategy="median")
 modelo_dummy.fit(np.zeros((len(y_train), 1)), y_train)
