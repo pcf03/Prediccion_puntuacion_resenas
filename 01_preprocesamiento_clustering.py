@@ -2,11 +2,14 @@ import pandas as pd
 import numpy as np
 import umap
 import nltk
+import warnings
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.cluster import HDBSCAN
 from nltk.corpus import stopwords
 
+# 0) SILENCIAMOS WARNINGS INOFENSIVOS
+warnings.filterwarnings("ignore")
 
 # 1) CONFIG INICIAL Y DESCARGA DE PALABRAS VACÍAS (stopwords)
 nltk.download("stopwords", quiet=True)
@@ -32,7 +35,7 @@ df["Positive_Review"] = df["Positive_Review"].fillna("")
 # Concatenamos las dos en una columna que se llama texto
 df["texto"] = df["Negative_Review"] + " " + df["Positive_Review"]
 # Quitamos espacios en blanco y si la fila esta en blanco ponemos a nulo
-df["texto"] = df["texto"].str.strip().replace("", np.nan)
+df["texto"] = df["texto"].str.strip().str.lower().replace("", np.nan)
 
 # Pasamos de 1-10 estrellas a 1-5 para la fase 2
 df["rating"] = np.ceil(df["Reviewer_Score"] / 2)
