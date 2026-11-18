@@ -43,8 +43,8 @@ df["rating"] = np.ceil(df["Reviewer_Score"] / 2)
 # Eliminamos filas que no tengan nada de texto, no nos sirven para nada
 df = df.dropna(subset=["texto", "rating"])
 
-# Filtro: Una vez limpio el texto real, cogemos 10.000 reseñas al azar
-df = df.sample(n=100000, random_state=SEED)
+# Filtro: Una vez limpio el texto real, cogemos 100.000 reseñas al azar
+df = df.sample(n=10000, random_state=SEED)
 
 # Cojo las variables X la entrada de texto e Y las estrellas que queremos predecir
 X_texto = df["texto"]
