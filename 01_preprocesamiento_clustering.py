@@ -5,7 +5,7 @@ import umap
 import nltk
 import warnings
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.model_selection import train_test_split, KFold, cross_val_score
+from sklearn.model_selection import train_test_split, KFold
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import Ridge
 from sklearn.cluster import HDBSCAN
@@ -19,7 +19,7 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
 from time import perf_counter
-from sklearn.model_selection import KFold
+
 
 
 # %% 
@@ -120,8 +120,8 @@ print(f"El {ruido:.0%} de las reseñas son ruido (no encajan en ningún tema pri
 # %%
 # 5) Modelos
 configuraciones = [
-    {"nombre": "Dummy (mediana)", "familia": "Dummy", "entrada": "base",
-     "modelo": DummyRegressor(strategy="median")}
+    {"nombre": "Dummy (media)", "familia": "Dummy", "entrada": "base",
+     "modelo": DummyRegressor(strategy="mean")}
 ]
 
 for alpha in [0.1, 1.0, 10.0]:
@@ -165,8 +165,7 @@ pipeline_texto = Pipeline([
     ("umap", clone(reductor_umap))
 ])
 
-# %% 
-# 6. Validación cruzada de cinco particiones
+# %% 6. Validación cruzada de cinco particiones
 
 validacion = KFold(n_splits=5, shuffle=True, random_state=SEED)
 resultados_cv = []
@@ -181,8 +180,8 @@ for particion, (indices_train, indices_val) in enumerate(
     notas_train = y_train.iloc[indices_train]
     notas_val = y_train.iloc[indices_val]
 
-    # Aprendemos la preparación solo con el entrenamiento de esta partición.
-    # No pasamos las notas para que UMAP siga siendo no supervisado.
+    # Aprendemos la preparación solo con el entrenamiento de esta partición
+    # No pasamos las notas para que UMAP siga siendo no supervisado
     preparacion = clone(pipeline_texto)
     train_umap = preparacion.fit_transform(textos_train)
     val_umap = preparacion.transform(textos_val)
@@ -199,7 +198,7 @@ for particion, (indices_train, indices_val) in enumerate(
         "umap": val_umap
     }
 
-    # Comparamos todos los modelos con las mismas particiones.
+    # Comparamos todos los modelos con las mismas particiones
     for configuracion in configuraciones:
         entrada = configuracion["entrada"]
         modelo = clone(configuracion["modelo"])
@@ -328,7 +327,7 @@ predicciones_test = np.clip(
     modelo_final.predict(X_test_final), 1, 10
 )
 
-modelo_dummy = DummyRegressor(strategy="median")
+modelo_dummy = DummyRegressor(strategy="mean")
 modelo_dummy.fit(np.zeros((len(y_train), 1)), y_train)
 predicciones_dummy = modelo_dummy.predict(np.zeros((len(y_test), 1)))
 
@@ -336,22 +335,25 @@ resultados_test = []
 for nombre, predicciones in [
     (nombre_mejor, predicciones_test), ("Referencia Dummy", predicciones_dummy)
 ]:
+    mse = mean_squared_error(y_test, predicciones)
     resultados_test.append({
         "modelo": nombre,
         "MAE": mean_absolute_error(y_test, predicciones),
-        "RMSE": np.sqrt(mean_squared_error(y_test, predicciones)),
+        "MSE": mse,
+        "RMSE": np.sqrt(mse),
         "R2": r2_score(y_test, predicciones)
     })
 resultados_test = pd.DataFrame(resultados_test)
 print("\nEvaluación final en test:")
 print(resultados_test.round(3).to_string(index=False))
 
-mae_modelo = resultados_test.iloc[0]["MAE"]
-mae_dummy = resultados_test.iloc[1]["MAE"]
-if mae_modelo < mae_dummy:
-    print(f"El modelo reduce el MAE del Dummy en {mae_dummy - mae_modelo:.3f} puntos.")
+# Comparamos con Dummy usando el MSE
+mse_modelo = resultados_test.iloc[0]["MSE"]
+mse_dummy = resultados_test.iloc[1]["MSE"]
+if mse_modelo < mse_dummy:
+    print(f"El modelo reduce el MSE del Dummy en {mse_dummy - mse_modelo:.3f} puntos.")
 else:
-    print("El modelo seleccionado no mejora el MAE del Dummy en este test.")
+    print("El modelo seleccionado no mejora el MSE del Dummy en este test.")
 
 # Mostramos las gráficas de MSE y RMSE creadas en el apartado anterior
 plt.show()
